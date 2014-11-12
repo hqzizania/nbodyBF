@@ -20,6 +20,7 @@ import org.apache.spark._
 
 import scala.collection.mutable
 import scala.util.Random
+import scala.math._
 
 object NbodyBF {
 
@@ -27,8 +28,8 @@ object NbodyBF {
   def generateDatapair = {
     var x: mutable.Set[Array[Array[Double]]] = mutable.Set.empty
     var iii = 0
-    val nn = math.ceil(math.pow(nparticles, 1.0/3)).toInt
-    val L = math.pow(nparticles/0.8, 1.0/3)  // linear size of cubical volume
+    val nn = ceil(pow(nparticles, 1.0/3)).toInt
+    val L = pow(nparticles/0.8, 1.0/3)  // linear size of cubical volume
     val pa = L / nn     // lattice spacing
     val vscale = 0.1    // maximum initial velocity component
 
@@ -111,7 +112,7 @@ object NbodyBF {
     var allparticle1 = sc.parallelize(generateDatapair, slices).cache()
     //#### Use broadcast() ##
     var allparticlebroadcast = sc.broadcast(allparticle1.collect())
-    val L = sc.broadcast(math.pow(nparticles/0.8, 1.0/3))  // linear size of cubical volume
+    val L = sc.broadcast(pow(nparticles/0.8, 1.0/3))  // linear size of cubical volume
 
     //    CheckandWrite(allparticle1.collect())
 
@@ -173,7 +174,7 @@ object NbodyBF {
         for(j <- 0 until a(0)(0).size){
           print(a(k)(i)(j) + " ")
         }
-        println
+        println()
       }
     }
 
@@ -232,9 +233,9 @@ object NbodyBF {
       //        val bi = (j / (nparticles / slices).toInt).toInt
       //        val bj = j % (nparticles / slices).toInt
       for (j <- 0 until b(0).size * b.size){
-        val bi = (j / b(0).size).toInt
-        val bj = (j % b(0).size).toInt
-        if(math.abs(a(i)(0) - b(bi)(bj)(0)) > 1e-6){
+        val bi = j / b(0).size
+        val bj = j % b(0).size
+        if(abs(a(i)(0) - b(bi)(bj)(0)) > 1e-6){
           //       if(a(i)(0).toInt != b(bi)(bj)(0).toInt){
           a(i) = BodybodyInteraction(a(i), b(bi)(bj), L)
         }
