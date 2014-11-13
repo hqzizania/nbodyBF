@@ -6,7 +6,8 @@ import scala.math._
 import scala.util.Random
 
 /**
- * Created by qhuang on 11/13/14.
+ *
+ *  Created by qhuang on 11/13/14.
  */
 /**
  * @param dirPath The directory path of an input file recording crystal coordination system
@@ -17,7 +18,7 @@ class GenLattice(sc: SparkContext, nparticles:Int, slices:Int, dirPath: String)
 }
 
 /**
- * Generate crystal lattice taking an example of solid argon
+ * Generate a simple cubic lattice lattice taking an example of solid argon
  * @param sc  SparkContext
  * @param nparticles number of particles in a molecular or crystal
  * @param slices  number of slices for spark running

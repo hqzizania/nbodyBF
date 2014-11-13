@@ -16,6 +16,8 @@
  */
 package com.intel.nbody
 
+import java.io.PrintWriter
+import java.io.File
 import org.apache.spark._
 import scala.math._
 
@@ -26,7 +28,12 @@ import scala.math._
 
 object NbodyBF{
 
-
+  /* dt: one time step
+     Verlet cutoff on the potential and neighbor list approximation
+     rCutoff = Cutoff * Cutoff
+   */
+  val dt = 0.01
+  val rCutoff = 2.5 * 2.5
 
   def main(args: Array[String]) {
 
@@ -53,79 +60,83 @@ object NbodyBF{
     }
 
     val g = new GenLatticeExample(sc, nparticles, slices)
+    /*
     val nbody = new NbodyBF(sc, g, nparticles, slices, cycles)
-    sc.stop()
+       sc.stop()
   }
 }
 
 class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, cycles:Int)
-  extends Serializable{
+  extends Serializable{*/
 
-    val dt = 0.01
-    val rCutoff = 2.5 * 2.5
 
     var allparticle = sc.parallelize(g.generateData, slices).cache()
     var allparticlebroadcast = sc.broadcast(allparticle.collect())
     val L = sc.broadcast(pow(nparticles / 0.8, 1.0 / 3)) // linear size of cubical volume
 
-    //    CheckandWrite(allparticle.collect())
+    val path = "lattice_location.txt"
+    val pw = new PrintWriter(new File(path))
+    CheckandWrite(pw, allparticle.collect())
 
     for (k <- 0 until cycles) {
 
       allparticle = allparticle.map(p => Update(p, allparticlebroadcast.value, L.value)).cache()
 
 
-      //#### Cut the lineage ! To prevent from StackOverFlowError ####
+
       if (k % 150 == 149 || k == cycles - 1) {
+        // Cut the lineage ! To prevent from StackOverFlowError
         allparticle.checkpoint()
         allparticle.count()
-        /*
-        println("loop " + (k+1) + ":" )
-        if(CheckandWrite(allparticle1.collect())){
-//          out.close()
+
+        pw.write("loop " + (k+1) + ":" )
+        if(CheckandWrite(pw, allparticle.collect())){
           println("iteration number: " + k)
           println("This N-body simulation is interrupted!")
           return
         }
-        */
       }
 
-      //###### Use broadcast() ##
       allparticlebroadcast = sc.broadcast(allparticle.collect())
 
     }
-    //   out.close()
+    pw.close()
+    sc.stop()
     println("iteration number: " + cycles)
     println("This N-body simulation is completed!")
 
+  }
 
 
   private def Update(a:Array[Array[Double]], b:Array[Array[Array[Double]]], L:Double) = {
+    // Velocity Verlet Integration Algorithm is used to solve second order ordinary differential equations
     NewpositionMatrix(NbodyInteraction(NewpositionMatrix_second(NbodyInteraction(a,  b, L)),  b, L), L)
   }
 
-  private def CheckandWrite(a:Array[Array[Array[Double]]])={
+  private def CheckandWrite(pw:PrintWriter, a:Array[Array[Array[Double]]])={
 
-    var balance = true
+    val check = false
     for(k <- 0 until a.size){
       for(i <- 0 until a(0).size){
         for(j <- 0 until a(0)(0).size){
-          print(a(k)(i)(j) + " ")
+          pw.write(a(k)(i)(j) + " ")
         }
-        println()
+        pw.write("\n")
       }
     }
-
-    balance = false
-    balance
+    check
   }
 
 
   private def BodybodyInteraction(a:Array[Double], b:Array[Double], L:Double)={
+  // Computing weak van der Waals forces, Cutoff = 2.5
 
     var rx = a(1) - b(1)
+    // using periodic boundary conditions
     if(rx > 0.5 * L) {rx = rx - L}
     if(rx < -0.5 * L) {rx = rx + L}
+    //
+
     var ry = a(2) - b(2)
     if(ry > 0.5 * L) {ry = ry - L}
     if(ry < -0.5 * L) {ry = ry + L}
@@ -136,10 +147,15 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
     val r2 = rx*rx + ry*ry + rz*rz
 
     if( r2 < rCutoff){
+
+      /*
+       * Lennard-Jones function
+       * f = 24 * ( 2 * math.pow(r2, -7) - math.pow(r2,-4))
+       */
       val r2inv = 1/r2
       val r6inv = r2inv * r2inv * r2inv
       val f = 24 * r2inv * r6inv * ( 2 * r6inv - 1 )
-      //      val f = 24 * ( 2 * math.pow(r2, -7) - math.pow(r2,-4))
+
       a(4) += rx * f
       a(5) += ry * f
       a(6) += rz * f
@@ -151,8 +167,9 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
   }
 
   private def NbodyInteraction(a:Array[Array[Double]], b:Array[Array[Array[Double]]], L:Double)={
+    // a: local particles, b: gobal particles
+    // Compute forces between a and b
     for (i <- 0 until a.size){
-
       for (j <- 0 until b(0).size * b.size){
         val bi = j / b(0).size
         val bj = j % b(0).size
@@ -182,14 +199,17 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
   }
 
   private def Newposition_MD(a:Array[Double], L:Double)={
-
+    // Verlet Integration Algorithm
 
     for( i <- 1 to 3){
-
+      // update positions
       a(i) += a(i+6) * dt + 0.5 * a(i+3) * dt * dt
+      // using periodic boundary conditions
       if(a(i) < 0) {a(i) += L;}
       if(a(i) > L) {a(i) -= L;}
+      // update velocities
       a(i+6) += a(i+3) * dt * 0.5
+      // set all accelerations to zero
       a(i+3) = 0.0
     }
 
@@ -197,11 +217,13 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
   }
 
   private def Newposition_MD_second(a:Array[Double])={
+  // Velocity Verlet Integration Algorithm
 
     a(7) += a(4) * dt * 0.5
     a(8) += a(5) * dt * 0.5
     a(9) += a(6) * dt * 0.5
 
+    // set all accelerations to zero
     a(4) = 0.0
     a(5) = 0.0
     a(6) = 0.0
