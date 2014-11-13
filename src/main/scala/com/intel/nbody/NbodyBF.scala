@@ -36,9 +36,9 @@ object NbodyBF{
   val rCutoff = 2.5 * 2.5
 
   def main(args: Array[String]) {
-
+    println("*****************NbodyBF*******************")
     if (args.length < 5) {
-      System.err.println("Usage: LocalNbodyBF <numParticle(x direction)> <time_steps> <slices>")
+      System.err.println("Usage: NbodyBF <master> <path to directory of generated data> <numParticle(x direction)> <time_steps> <slices>")
       System.exit(1)
     }
 
@@ -75,6 +75,7 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
     val L = sc.broadcast(pow(nparticles / 0.8, 1.0 / 3)) // linear size of cubical volume
 
     val path = "lattice_location.txt"
+    val pathRDD = "lattice_location.RDD.txt"
     val pw = new PrintWriter(new File(path))
     CheckandWrite(pw, allparticle.collect())
 
@@ -89,6 +90,7 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
         allparticle.checkpoint()
         allparticle.count()
 
+        allparticle.saveAsTextFile(pathRDD)
         pw.write("loop " + (k+1) + ":" )
         if(CheckandWrite(pw, allparticle.collect())){
           println("iteration number: " + k)
@@ -104,6 +106,7 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
     sc.stop()
     println("iteration number: " + cycles)
     println("This N-body simulation is completed!")
+    println("*****************************************")
 
   }
 
@@ -124,6 +127,9 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
         pw.write("\n")
       }
     }
+
+
+
     check
   }
 
