@@ -20,11 +20,11 @@ import org.apache.spark._
 import scala.math._
 
 /**
- * Created by qhuang on 11/13/14.
+ *  Created by qhuang on 11/13/14.
  */
 
 
-object NbodyBF {
+object NbodyBF extends Serializable{
 
   def main(args: Array[String]) {
 
@@ -56,7 +56,7 @@ object NbodyBF {
   }
 }
 
-class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, cycles:Int){
+class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, cycles:Int) extends Serializable{
 
     val dt = 0.01
     val rCutoff = 2.5 * 2.5
