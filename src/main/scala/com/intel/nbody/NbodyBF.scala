@@ -47,8 +47,8 @@ object NbodyBF{
       .setMaster(args(0))
       .set("spark.executor.memory", "120g")
       .set("spark.cores.max", "224")
-      .set("CheckpointDir", args(1))
     val sc = new SparkContext(conf)
+    sc.setCheckpointDir(args(1))
 
     val nparticles = args(2).toInt * args(2).toInt * args(2).toInt
     val cycles = args(3).toInt
