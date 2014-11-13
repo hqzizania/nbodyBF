@@ -24,11 +24,10 @@ import scala.math._
  */
 
 
-object NbodyBF extends Serializable{
+object NbodyBF{
 
-  val dt = 0.01
-  val rCutoff = 2.5 * 2.5
-  
+
+
   def main(args: Array[String]) {
 
     if (args.length < 5) {
@@ -54,14 +53,16 @@ object NbodyBF extends Serializable{
     }
 
     val g = new GenLatticeExample(sc, nparticles, slices)
-    /*    val nbody = new NbodyBF(sc, g, nparticles, slices, cycles)
+    val nbody = new NbodyBF(sc, g, nparticles, slices, cycles)
     sc.stop()
   }
 }
 
 class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, cycles:Int)
-  extends Serializable{*/
+  extends Serializable{
 
+    val dt = 0.01
+    val rCutoff = 2.5 * 2.5
 
     var allparticle = sc.parallelize(g.generateData, slices).cache()
     var allparticlebroadcast = sc.broadcast(allparticle.collect())
@@ -97,7 +98,7 @@ class NbodyBF(sc:SparkContext, g:GenLatticeExample, nparticles:Int, slices:Int, 
     println("iteration number: " + cycles)
     println("This N-body simulation is completed!")
 
-  }
+
 
   private def Update(a:Array[Array[Double]], b:Array[Array[Array[Double]]], L:Double) = {
     NewpositionMatrix(NbodyInteraction(NewpositionMatrix_second(NbodyInteraction(a,  b, L)),  b, L), L)
