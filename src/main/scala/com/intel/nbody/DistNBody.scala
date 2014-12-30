@@ -26,7 +26,7 @@ import scala.math._
  *  Distributed N-body simulation with support for multiple parallel runs.
  *
  *  It only includes Direct N-body method at present.
- *  
+ *
  */
 
 trait DistNBody extends Serializable with Logging{
@@ -59,7 +59,21 @@ trait DistNBody extends Serializable with Logging{
   /**
    * Implementation of N-body simulations.
    * @param parInfoI Input data formed as RDD[Vector]
-   *                 A vector represent
+   * the number of rows of RDD[Vector] is equal to the number of particles (objects)
+   * For DistNBodyDirectMD:
+   *                 vector:
+   *                 a[0]: No. of particle
+   *                 a[1], a[2], a[3]: position of particle in x, y, z coordinates
+   *                 a[4], a[5], a[6]: accelerations at x, y, z directions
+   *                 a[7], a[8], a[9]: velocities at x, y, z directions
+   *
+   * For DistNBodyDirectAstro:
+   *                 vector:
+   *                 a[0]: No. of object
+   *                 a[1], a[2], a[3]: position of object in x, y, z coordinates
+   *                 a[4], a[5], a[6]: accelerations at x, y, z directions
+   *                 a[7], a[8], a[9]: velocities at x, y, z directions
+   *                 a[10]: mass of object
    */
   def simulation(parInfoI:RDD[Vector]): RDD[Vector] = {
 
