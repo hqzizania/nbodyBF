@@ -33,7 +33,7 @@ object DistNBodyDirectMDTest{
       .set("spark.executor.memory", "120g")
       .set("spark.cores.max", "224")
     val sc = new SparkContext(conf)
-//    sc.setCheckpointDir(args(1))
+    sc.setCheckpointDir(args(1))
 
     val nParticles = args(2).toInt * args(2).toInt * args(2).toInt
     val cycles = args(3).toInt
